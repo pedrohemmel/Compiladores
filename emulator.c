@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-
+ 
 uint8_t ac = 0;
 int pc = 0;
 bool n = false;

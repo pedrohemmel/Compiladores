@@ -1,0 +1,11 @@
+var
+valor1 10 75
+valor2 10 76
+end
+
+code
+NOP
+LDA valor1
+ADD valor2
+HLT
+end

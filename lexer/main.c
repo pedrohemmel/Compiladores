@@ -113,62 +113,6 @@ void tokenize(HeadList *head, char *s) {
     }
 }
 
-void putInString(char *str, int *i, char value) {
-    str[*i] = value;
-    (*i)++;
-}
-
-char *printTokenList(HeadList *head, char *str) {
-    uint64_t iList;
-    int *iStr = malloc(sizeof(int));
-    *iStr = 0;
-    putInString(str, iStr, '[');
-    putInString(str, iStr, '\n');
-    bool isNumber = false;
-    for (iList = 0; iList < head->size; iList++) {
-        isNumber = head->list[iList].token == Inteiros || head->list[iList].token == Reais;
-
-        putInString(str, iStr, '\t');
-        strcpy(str + *iStr, TOKEN_STRING[head->list[iList].token]);
-        *iStr += strlen(TOKEN_STRING[head->list[iList].token]);
-
-        putInString(str, iStr, '(');
-        putInString(str, iStr, '\n');
-        putInString(str, iStr, '\t');
-        putInString(str, iStr, '\t');
-
-        if (isNumber) {
-            char *numStr = calloc(sizeof(char), 25);
-            if (head->list[iList].token == Inteiros) {
-                sprintf(numStr, "%u", *((unsigned int *)(head->list[iList].value)));
-            } else {
-                sprintf(numStr, "%f", *((float *)(head->list[iList].value)));
-            }
-            strcpy(str + *iStr, numStr);
-            *iStr += strlen(numStr);
-            free(numStr);
-        } else {
-            putInString(str, iStr, '\'');
-            strcpy(str + *iStr, ((char *)(head->list[iList].value)));
-            *iStr += strlen(((char *)(head->list[iList].value)));
-            putInString(str, iStr, '\'');
-        }
-
-        putInString(str, iStr, ',');
-        putInString(str, iStr, '\n');
-        putInString(str, iStr, '\t');
-        putInString(str, iStr, ')');
-
-        putInString(str, iStr, ',');
-        putInString(str, iStr, '\n');
-    }
-    putInString(str, iStr, ']');
-    putInString(str, iStr, '\n');
-
-    free(iStr);
-    return str;
-}
-
 void freeHeadList(HeadList *head) {
     for (uint64_t i = 0; i < head->size; i++) {
         free(head->list[i].value);
@@ -201,12 +145,9 @@ int main() {
     fclose(file);
 
     //Chama a função que tokeniza o arquivo aberto e printa logo após
-    char *str = calloc(1000, sizeof(char));
     tokenize(head, program);
-    printf("TOKENS: %s", printTokenList(head, str));
 
     free(program);
     freeHeadList(head);
-    free(str);
     return 0;
 }

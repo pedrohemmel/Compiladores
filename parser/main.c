@@ -32,6 +32,10 @@ typedef struct HeadsLists {
     TokenValue *list;
 } HeadList;
 
+//////////////
+// FUNÇÕES PARA TOKENIZAR E ARMAZENAR TOKEN
+//////////////
+
 void addToken(HeadList *head, enum Token token, void *value, size_t valueSize) {
     head->size += 1;
     if (head->size == 1) {
@@ -71,11 +75,9 @@ void tokenize(HeadList *head, char *s) {
             }
             if (!isUndefined) {
                 if (itHasPoint) {
-                    // Reais
                     float num = atof(numStr);
                     addToken(head, Reais, &num, sizeof(float));
                 } else {
-                    // Inteiros
                     unsigned int num = atoi(numStr);
                     addToken(head, Inteiros, &num, sizeof(unsigned int));
                 }
@@ -113,61 +115,9 @@ void tokenize(HeadList *head, char *s) {
     }
 }
 
-void putInString(char *str, int *i, char value) {
-    str[*i] = value;
-    (*i)++;
-}
-
-char *printTokenList(HeadList *head, char *str) {
-    uint64_t iList;
-    int *iStr = malloc(sizeof(int));
-    *iStr = 0;
-    putInString(str, iStr, '[');
-    putInString(str, iStr, '\n');
-    bool isNumber = false;
-    for (iList = 0; iList < head->size; iList++) {
-        isNumber = head->list[iList].token == Inteiros || head->list[iList].token == Reais;
-
-        putInString(str, iStr, '\t');
-        strcpy(str + *iStr, TOKEN_STRING[head->list[iList].token]);
-        *iStr += strlen(TOKEN_STRING[head->list[iList].token]);
-
-        putInString(str, iStr, '(');
-        putInString(str, iStr, '\n');
-        putInString(str, iStr, '\t');
-        putInString(str, iStr, '\t');
-
-        if (isNumber) {
-            char *numStr = calloc(sizeof(char), 25);
-            if (head->list[iList].token == Inteiros) {
-                sprintf(numStr, "%u", *((unsigned int *)(head->list[iList].value)));
-            } else {
-                sprintf(numStr, "%f", *((float *)(head->list[iList].value)));
-            }
-            strcpy(str + *iStr, numStr);
-            *iStr += strlen(numStr);
-            free(numStr);
-        } else {
-            putInString(str, iStr, '\'');
-            strcpy(str + *iStr, ((char *)(head->list[iList].value)));
-            *iStr += strlen(((char *)(head->list[iList].value)));
-            putInString(str, iStr, '\'');
-        }
-
-        putInString(str, iStr, ',');
-        putInString(str, iStr, '\n');
-        putInString(str, iStr, '\t');
-        putInString(str, iStr, ')');
-
-        putInString(str, iStr, ',');
-        putInString(str, iStr, '\n');
-    }
-    putInString(str, iStr, ']');
-    putInString(str, iStr, '\n');
-
-    free(iStr);
-    return str;
-}
+//////////////
+// FUNÇÕES PARA LIBERAR MEMÓRIA
+//////////////
 
 void freeHeadList(HeadList *head) {
     for (uint64_t i = 0; i < head->size; i++) {
@@ -177,64 +127,102 @@ void freeHeadList(HeadList *head) {
     free(head);
 }
 
-void assemblyOperation(FILE *file, HeadList *head) {
+//////////////
+// GERANDO ASSEMBLER
+//////////////
+
+void generateSumAssembler(FILE *file, int num1, int num2) {
+    fprintf(file, "var\n");
+    fprintf(file, "valor1 %d 75\n", num1);
+    fprintf(file, "valor2 %d 76\n", num2);
+    fprintf(file, "end\n");
+    fprintf(file, "code\n");
+    fprintf(file, "LDA valor1\n");
+    fprintf(file, "ADD valor2\n");
+    fprintf(file, "HLT\n");
+    fprintf(file, "end\n");
+}
+
+void generateSubtractionAssembler(FILE *file, int num1, int num2) {
+    fprintf(file, "var\n");
+    fprintf(file, "valor1 %d 75\n", num1);
+    fprintf(file, "valor2 %d 76\n", num2);
+    fprintf(file, "end\n");
+    fprintf(file, "code\n");
+    fprintf(file, "LDA valor2\n");
+    fprintf(file, "NOT\n");
+    fprintf(file, "STA valor2\n");
+    fprintf(file, "LDA valor1\n");
+    fprintf(file, "ADD valor2\n");
+    fprintf(file, "HLT\n");
+    fprintf(file, "end\n");
+}
+
+void generateMultiplierAssembler(FILE *file, int num1, int num2) {
+    fprintf(file, "var\n");
+    fprintf(file, "valor1 %d 75\n", num1);
+    fprintf(file, "valor2 %d 76\n", num2);
+    fprintf(file, "aux %d 77\n", num1);
+    fprintf(file, "decrementer 1 78\n");
+    fprintf(file, "end\n");
+    fprintf(file, "code\n");
+    fprintf(file, "LDA decrementer\n");
+    fprintf(file, "NOT\n");
+    fprintf(file, "STA decrementer\n");
+    fprintf(file, "LDA valor2\n");
+    fprintf(file, "ADD decrementer\n");
+    fprintf(file, "NOP\n");
+    fprintf(file, "JZ 22\n");
+    fprintf(file, "LDA valor1\n");
+    fprintf(file, "ADD aux\n");
+    fprintf(file, "STA valor1\n");
+    fprintf(file, "JMP 10\n");
+    fprintf(file, "HLT\n");
+    fprintf(file, "end\n");
+}
+
+
+void generateAssemblerWithOperation(FILE *file, HeadList *head, int num1, int num2) {
     for (int iList = 0; iList < head->size; iList++) {
         switch(head->list[iList].token) {
             case Soma:
-            fprintf(file, "\tfadd\n");
+            printf("Soma feita!\n");
+            generateSumAssembler(file, num1, num2);
             break;
             case Multiplicacao:
-            fprintf(file, "\tfmul\n");
+            printf("Multiplicação feita!\n");
+            generateMultiplierAssembler(file, num1, num2);
             break;
             case Divisao:
-            fprintf(file, "\tfdiv\n");
+            printf("Conta não implementada");
             break;
             case Subtracao:
-            fprintf(file, "\tfsub\n");
+            printf("Subtração feita!\n");
+            generateSubtractionAssembler(file, num1, num2);
             break;
             default:
-            printf("INVALIDO");
+            printf("Operação inválida\n");
             break;
         }
     }
 }
 
-void generateAssembly(FILE *file, HeadList *head) {
-    fprintf(file, "section .data\n");
-    fprintf(file, "\tresultado db 'Resultado: ', 0\n");
-    fprintf(file, "section .text\n");
-    fprintf(file, "\tglobal _start\n");
-    fprintf(file, "_start:\n");
-    fprintf(file, "\tfinit\n");
-    
-    float num1, num2;
+void generateAssembler(FILE *file, HeadList *head) {
+    int num1, num2;
     bool foundNumber = false;
     for (uint64_t i = 0; i < head->size; i++) {
-        if (head->list[i].token == Inteiros || head->list[i].token == Reais) {
+        if (head->list[i].token == Inteiros) {
             if (!foundNumber) {
-                num1 = *((float *)(head->list[i].value));
+                num1 = *((int *)(head->list[i].value));
                 foundNumber = true;
             } else {
-                num2 = *((float *)(head->list[i].value));
+                num2 = *((int *)(head->list[i].value));
                 break;
             }
         }
     }
-    
-    fprintf(file, "\tfld %f\n", num1);
-    fprintf(file, "\tfld %f\n", num2);
-    assemblyOperation(file, head);
-    fprintf(file, "\tfstp %1$f\n", num2);
 
-    fprintf(file, "\tmov eax, 4\n");
-    fprintf(file, "\tmov ebx, 1\n");
-    fprintf(file, "\tmov ecx, resultado\n");
-    fprintf(file, "\tmov edx, 13\n");
-    fprintf(file, "\tint 0x80\n");
-
-    fprintf(file, "\tmov eax, 1\n");
-    fprintf(file, "\txor ebx, ebx\n");
-    fprintf(file, "\tint 0x80\n");
+    generateAssemblerWithOperation(file, head, num1, num2);
 }
 
 
@@ -261,22 +249,19 @@ int main() {
         printf("Error: Reading file");
     fclose(file);
 
-    //Chama a função que tokeniza o arquivo aberto e printa logo após
-    char *str = calloc(1000, sizeof(char));
+    //Chama a função que tokeniza o arquivo aberto
     tokenize(head, program);
-    printf("TOKENS: %s", printTokenList(head, str));
 
     // Gerar o código assembly correspondente à operação
-    FILE *assemblyFile = fopen("assembly_code.asm", "w");
+    FILE *assemblyFile = fopen("assembler.txt", "w");
     if (assemblyFile == NULL) {
-        printf("Error: Opening assembly file");
+        printf("Error: Opening assembler file");
         return 1;
     }
-    generateAssembly(assemblyFile, head);
-    fclose(assemblyFile);
+    generateAssembler(assemblyFile, head);
 
+    fclose(assemblyFile);
     free(program);
     freeHeadList(head);
-    free(str);
     return 0;
 }

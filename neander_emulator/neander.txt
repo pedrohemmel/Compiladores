@@ -1,11 +1,20 @@
 var
-valor1 10 75
-valor2 10 76
+valor1 2 75
+valor2 2 76
+aux 2 77
+decrementer 1 78
 end
-
 code
+LDA decrementer
+NOT
+STA decrementer
+LDA valor2
+ADD decrementer
 NOP
+JZ 22
 LDA valor1
-ADD valor2
+ADD aux
+STA valor1
+JMP 10
 HLT
 end
